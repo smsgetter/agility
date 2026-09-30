@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --config vite.wc.config.ts && node scripts/build-registry.mjs",
+    "build:wc": "vite build --config vite.wc.config.ts && cp dist/wc/agility-embed.js dist/agility-embed.js",
     "registry": "node scripts/build-registry.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
