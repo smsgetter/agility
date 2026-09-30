@@ -1,0 +1,82 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build demo (BASE_PATH for schdan)
+        run: npm run build
+        env:
+          BASE_PATH: "/schdan/"
+
+      - name: Build Web Component
+        run: npm run build:wc
+        env:
+          BASE_PATH: "/schdan/"
+
+      - name: Prepare pages
+        run: |
+          mkdir -p dist/pages
+          cp dist/index.html dist/pages/demo.html
+          cp dist/agility-embed.js dist/pages/
+          echo '<!DOCTYPE html>
+          <html>
+          <head>
+            <title>Agility - Design System</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body>
+            <div id="root"></div>
+            <script src="./agility-embed.js"><\/script>
+            <script>
+              const container = document.getElementById("root");
+              const embed = document.createElement("agility-embed");
+              embed.style.width = "100%";
+              embed.style.height = "100vh";
+              container.appendChild(embed);
+            <\/script>
+          </body>
+          </html>' > dist/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "dist"
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
